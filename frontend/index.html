@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Jeensetu</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(180deg, #fff0f3, #ffffff);
+    }
+
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      padding: 20px 50px;
+      background: white;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .brand {
+      font-size: 24px;
+      font-weight: bold;
+      color: #e63946;
+    }
+
+    .nav-links a {
+      margin-left: 20px;
+      text-decoration: none;
+      color: #333;
+      font-weight: 500;
+    }
+
+    .hero {
+      text-align: center;
+      padding: 80px 20px;
+    }
+
+    .heart {
+      font-size: 80px;
+    }
+
+    .title {
+      font-size: 56px;
+      font-weight: bold;
+      color: #e63946;
+    }
+
+    .subtitle {
+      font-size: 18px;
+      color: #555;
+      max-width: 600px;
+      margin: auto;
+    }
+
+    .actions {
+      margin-top: 40px;
+    }
+
+    .btn {
+      padding: 14px 28px;
+      margin: 10px;
+      border-radius: 10px;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      color: white;
+      text-decoration: none;
+    }
+
+    .donor { background: #2ecc71; }
+    .match { background: #3498db; }
+    .sos   { background: #e74c3c; }
+
+    .stats {
+      margin-top: 60px;
+      text-align: center;
+    }
+
+    .counter {
+      display: inline-flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .digit {
+      background: linear-gradient(135deg,#ff758f,#ff7eb3);
+      color: white;
+      font-size: 28px;
+      padding: 18px 22px;
+      border-radius: 12px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="navbar">
+    <div class="brand">❤️ Jeensetu</div>
+    <div class="nav-links">
+      <a href="?page=home">Home</a>
+      <a href="?page=donor">Become a Donor</a>
+      <a href="?page=match">Find a Match</a>
+      <a href="?page=sos">Emergency SOS</a>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div class="heart">❤️</div>
+    <div class="title">Jeensetu</div>
+    <p class="subtitle">
+      Bridging Lives Through Organ Donation.  
+      Your decision today can save up to 8 lives tomorrow.
+    </p>
+
+    <div class="actions">
+      <a class="btn donor" href="?action=donor">Become a Donor</a>
+      <a class="btn match" href="?action=match">Find a Match</a>
+      <a class="btn sos" href="?action=sos">Emergency SOS</a>
+    </div>
+
+    <div class="stats">
+      <h3>❤️ Lives Saved So Far</h3>
+      <div class="counter">
+        <div class="digit">1</div>
+        <div class="digit">2</div>
+        <div class="digit">8</div>
+        <div class="digit">4</div>
+        <div class="digit">7</div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

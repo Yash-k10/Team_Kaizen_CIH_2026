@@ -1,75 +1,78 @@
 import streamlit as st
-import pandas as pd
+from database import init_db, get_db, hash_password
+from matching_engine import match
+from datetime import datetime
 
-from database import (
-    create_tables,
-    add_donor,
-    add_recipient,
-    get_donors,
-    get_recipients
-)
+init_db()
 
-from matching_engine import find_matches
+# ---------------- SESSION ----------------
+if "role" not in st.session_state:
+    st.session_state.role = None
 
-# Initialize DB
-create_tables()
+# ---------------- LOGIN ----------------
+def login(role):
+    st.subheader(f"{role.capitalize()} Login")
+    email = st.text_input("Email")
+    password = st.text_input("Password", type="password")
 
-st.set_page_config(page_title="Organ Donation Platform", layout="wide")
+    if st.button("Login"):
+        db = get_db()
+        c = db.cursor()
+        c.execute("SELECT * FROM users WHERE email=? AND role=?", (email, role))
+        user = c.fetchone()
+        if user and user[5] == hash_password(password):
+            st.session_state.role = role
+            st.session_state.user = email
+            st.success("Login successful")
+        else:
+            st.error("Invalid credentials")
 
-st.title("🫀 Organ Donation Matching Platform")
-st.caption("SDG 3.17 – AI-powered donor–recipient matching")
+# ---------------- LANDING ----------------
+if not st.session_state.role:
+    st.title("❤️ JeevSetu – Organ Donation Platform")
 
-menu = st.sidebar.radio(
-    "Navigation",
-    ["Add Donor", "Add Recipient", "View Matches", "Admin Dashboard"]
-)
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button("User Login"):
+            login("user")
+    with col2:
+        if st.button("Hospital Login"):
+            login("hospital")
+    with col3:
+        if st.button("Admin Login"):
+            login("admin")
 
-# ---------------- ADD DONOR ----------------
-if menu == "Add Donor":
-    st.header("➕ Register Donor")
+# ---------------- USER / HOSPITAL ----------------
+elif st.session_state.role in ["user", "hospital"]:
+    st.sidebar.title("Menu")
+    choice = st.sidebar.radio("Navigate", ["SOS Alert", "Find Organ"])
 
-    with st.form("donor_form"):
-        name = st.text_input("Name")
-        age = st.number_input("Age", min_value=1, max_value=100)
-        blood = st.selectbox("Blood Group", ["O", "A", "B", "AB"])
-        organ = st.selectbox("Organ", ["Kidney", "Liver", "Heart", "Lung"])
-        city = st.text_input("City")
-        urgency = st.slider("Urgency Level", 1, 5)
+    if choice == "SOS Alert":
+        with st.form("sos"):
+            age = st.number_input("Patient Age", 1, 100)
+            blood = st.selectbox("Blood Group", ["A+","A-","B+","B-","AB+","AB-","O+","O-"])
+            organ = st.selectbox("Organ", ["Kidney","Liver","Heart","Lung"])
+            urgency = st.slider("Urgency", 0, 100)
+            loc = st.text_input("Location")
 
-        submit = st.form_submit_button("Add Donor")
+            if st.form_submit_button("Send SOS"):
+                db = get_db()
+                db.execute("""
+                INSERT INTO sos_cases VALUES (NULL,?,?,?,?,?,?)
+                """, (st.session_state.role, age, blood, organ, urgency, loc, datetime.now().isoformat()))
+                db.commit()
+                st.success("SOS Alert Created")
 
-        if submit:
-            add_donor(name, age, blood, organ, city, urgency)
-            st.success("Donor added successfully")
+    if choice == "Find Organ":
+        patient = {"blood": "A+", "lat": 19.0, "lon": 72.0, "urgency": 80}
+        donors = [{"name": "Donor1", "blood": "A+", "lat": 19.1, "lon": 72.1}]
+        results = match(patient, donors)
+        st.dataframe(results)
 
-# ---------------- ADD RECIPIENT ----------------
-elif menu == "Add Recipient":
-    st.header("➕ Register Recipient")
-
-    with st.form("recipient_form"):
-        name = st.text_input("Name")
-        age = st.number_input("Age", min_value=1, max_value=100)
-        blood = st.selectbox("Blood Group", ["O", "A", "B", "AB"])
-        organ = st.selectbox("Organ Needed", ["Kidney", "Liver", "Heart", "Lung"])
-        city = st.text_input("City")
-        urgency = st.slider("Urgency Level", 1, 5)
-
-        submit = st.form_submit_button("Add Recipient")
-
-        if submit:
-            add_recipient(name, age, blood, organ, city, urgency)
-            st.success("Recipient added successfully")
-
-# ---------------- VIEW MATCHES ----------------
-elif menu == "View Matches":
-    st.header("🔍 Matching Results")
-
-    matches = find_matches()
-
-    if matches:
-        df = pd.DataFrame(matches)
-        st.dataframe(df, use_container_width=True)
-    else:
-        st.info("No matches found yet.")
-st.metric("AI Priority Score", final_score)
-st.caption("AI-assisted decision — final approval by medical authority")
+# ---------------- ADMIN ----------------
+elif st.session_state.role == "admin":
+    st.title("Admin Dashboard")
+    db = get_db()
+    st.subheader("Pending Hospitals")
+    rows = db.execute("SELECT name,email FROM hospitals WHERE verified=0").fetchall()
+    st.table(rows)

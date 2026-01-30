@@ -1,69 +1,29 @@
-from database import get_donors, get_recipients
+from math import radians, cos, sin, asin, sqrt
+from ml_model import predict_score
 
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371
+    dlat = radians(lat2 - lat1)
+    dlon = radians(lon2 - lon1)
+    a = sin(dlat/2)**2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon/2)**2
+    return 2 * R * asin(sqrt(a))
 
-# Blood group compatibility rules
-BLOOD_COMPATIBILITY = {
-    "O": ["O", "A", "B", "AB"],
-    "A": ["A", "AB"],
-    "B": ["B", "AB"],
-    "AB": ["AB"]
-}
+def blood_compatible(donor, patient):
+    return donor == patient
 
+def match(patient, donors):
+    results = []
+    for d in donors:
+        if not blood_compatible(d["blood"], patient["blood"]):
+            continue
 
-def is_blood_compatible(donor_bg, recipient_bg):
-    donor_bg = donor_bg.upper()
-    recipient_bg = recipient_bg.upper()
-    return recipient_bg in BLOOD_COMPATIBILITY.get(donor_bg, [])
+        dist = haversine(patient["lat"], patient["lon"], d["lat"], d["lon"])
+        score = predict_score(patient["urgency"], dist, 1)
 
+        results.append({
+            "donor": d["name"],
+            "distance_km": round(dist, 1),
+            "score": score
+        })
 
-def calculate_match_score(donor, recipient):
-    score = 0
-
-    # donor = (id, name, age, blood, organ, city, urgency)
-    # recipient = (id, name, age, blood, organ, city, urgency)
-
-    # 1. Organ match (mandatory)
-    if donor[4].lower() != recipient[4].lower():
-        return 0
-
-    score += 40  # strong weight
-
-    # 2. Blood group compatibility
-    if is_blood_compatible(donor[3], recipient[3]):
-        score += 30
-
-    # 3. Same city bonus
-    if donor[5].lower() == recipient[5].lower():
-        score += 15
-
-    # 4. Urgency priority
-    score += min(recipient[6] * 2, 10)
-
-    # 5. Age similarity
-    age_diff = abs(donor[2] - recipient[2])
-    if age_diff <= 5:
-        score += 5
-
-    return score
-
-
-def find_matches():
-    donors = get_donors()
-    recipients = get_recipients()
-
-    matches = []
-
-    for recipient in recipients:
-        for donor in donors:
-            score = calculate_match_score(donor, recipient)
-            if score > 0:
-                matches.append({
-                    "donor_name": donor[1],
-                    "recipient_name": recipient[1],
-                    "organ": donor[4],
-                    "score": score
-                })
-
-    # Sort by highest score
-    matches.sort(key=lambda x: x["score"], reverse=True)
-    return matches
+    return sorted(results, key=lambda x: x["score"], reverse=True)

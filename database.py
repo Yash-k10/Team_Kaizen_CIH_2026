@@ -1,81 +1,81 @@
 import sqlite3
-import os
+import hashlib
+import datetime
 
 DB_PATH = "data/organ_donation.db"
 
+# -------------------- UTILITIES --------------------
+def get_db():
+    return sqlite3.connect(DB_PATH, check_same_thread=False)
 
-def get_connection():
-    os.makedirs("data", exist_ok=True)
-    return sqlite3.connect(DB_PATH)
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
 
+# -------------------- INIT --------------------
+def init_db():
+    db = get_db()
+    c = db.cursor()
 
-def create_tables():
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS donors (
-            donor_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT,
-            age INTEGER,
-            blood_group TEXT,
-            organ TEXT,
-            city TEXT,
-            urgency INTEGER
-        )
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        role TEXT,
+        name TEXT,
+        email TEXT UNIQUE,
+        phone TEXT,
+        password TEXT,
+        city TEXT,
+        state TEXT,
+        country TEXT,
+        blood_group TEXT,
+        verified INTEGER DEFAULT 0
+    )
     """)
 
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS recipients (
-            recipient_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT,
-            age INTEGER,
-            blood_group TEXT,
-            organ TEXT,
-            city TEXT,
-            urgency INTEGER
-        )
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS hospitals (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        email TEXT UNIQUE,
+        phone TEXT,
+        license TEXT,
+        address TEXT,
+        lat REAL,
+        lon REAL,
+        capacity INTEGER,
+        verified INTEGER DEFAULT 0
+    )
     """)
 
-    conn.commit()
-    conn.close()
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS sos_cases (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        role TEXT,
+        patient_age INTEGER,
+        blood_group TEXT,
+        organ TEXT,
+        urgency INTEGER,
+        location TEXT,
+        created_at TEXT
+    )
+    """)
 
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS audit_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        actor TEXT,
+        action TEXT,
+        timestamp TEXT
+    )
+    """)
 
-def add_donor(name, age, blood_group, organ, city, urgency):
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO donors (name, age, blood_group, organ, city, urgency)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (name, age, blood_group, organ, city, urgency))
-    conn.commit()
-    conn.close()
+    # Seed admin
+    c.execute("SELECT * FROM users WHERE role='admin'")
+    if not c.fetchone():
+        c.execute("""
+        INSERT INTO users (role, name, email, password, verified)
+        VALUES ('admin','Admin','admin@jeevsetu.org',?,1)
+        """, (hash_password("admin123"),))
 
-
-def add_recipient(name, age, blood_group, organ, city, urgency):
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO recipients (name, age, blood_group, organ, city, urgency)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (name, age, blood_group, organ, city, urgency))
-    conn.commit()
-    conn.close()
-
-
-def get_donors():
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM donors")
-    rows = cursor.fetchall()
-    conn.close()
-    return rows
-
-
-def get_recipients():
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM recipients")
-    rows = cursor.fetchall()
-    conn.close()
-    return rows
+    db.commit()
+    db.close()

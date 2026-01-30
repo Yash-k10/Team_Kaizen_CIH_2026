@@ -111,15 +111,6 @@ Distance & ETA
 
 Emergency routing
 
-🪪 DigiLocker Integration (Planned / Mocked)
-
-Secure identity verification
-
-Government-grade trust
-
-Prevents fake donors & recipients
-
-Legal & compliance ready
 
 🧰 Tech Stack
 Frontend
@@ -202,3 +193,4 @@ Innovation for Impact 🚀
 
 JeevSetu is not just a project — it is a life-saving digital health solution.
 Built for emergencies, designed for scale, and aligned with national healthcare goals.
+
